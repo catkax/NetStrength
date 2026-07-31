@@ -67,7 +67,7 @@ Input files (case `.sav`, sequence `.seq`, and dynamics `.dyr` files) can be loc
 - numpy
 - plotly
 - xlsxwriter
-- PSS/E Python integration available on this machine for [1_Extract_Strength_Metric.py](1_Extract_Strength_Metric.py)
+- PSS/E version 36.5.0+ (and associated python libraries)
 
 ## Run (Windows GUI)
 
