@@ -10,30 +10,30 @@ This repository contains a system strength workflow that can now be run as a Win
     1. [src/system_strength_tool/extract_metric.py](src/system_strength_tool/extract_metric.py)
     2. [src/system_strength_tool/map_metric.py](src/system_strength_tool/map_metric.py)
     3. [src/system_strength_tool/create_display.py](src/system_strength_tool/create_display.py)
-  - Iterates over two keyword labels in code: GFL and GFM, then compares the two.
+  - For dynamic analysis, iterates over two keyword labels in code: GFL and GFM, then compares the two.
 - [scripts/run_gui.py](scripts/run_gui.py)
   - Windows-friendly Tkinter desktop app.
   - Lets you select analysis, mode, and metric, then run the workflow with live logs.
   - Can open output folder and latest comparison viewer directly.
 - [src/system_strength_tool/extract_metric.py](src/system_strength_tool/extract_metric.py)
-  - Runs PSS/E dynamic simulations and extracts SCMVA/SCR results.
+  - Runs PSS/E dynamic simulations and extracts strength metric results.
   - Writes:
-    - SCR_Results_{keyword}.xlsx
+    - Strength_Metric_Results_{metric}.xlsx
     - raw_out_data/dynamic_simulation_results_{keyword}.xlsx
     - raw_out_data/postprocessed_dynamic_simulation_results_{keyword}.xlsx
 - [src/system_strength_tool/map_metric.py](src/system_strength_tool/map_metric.py)
-  - Reads SCR_Results_{keyword}.xlsx.
+  - Reads Strength_Metric_Results_{metric}.xlsx.
   - Generates per-case map HTML files in htmls_{keyword}/.
 - [src/system_strength_tool/create_display.py](src/system_strength_tool/create_display.py)
   - Reads generated map files from htmls_{keyword}/.
-  - Creates htmls_{keyword}/SCR_All_Grid_{keyword}.html.
+  - Creates {metric}_htmls/{metric}_All_Grid_{keyword}.html.
 
 ## Data Inputs
 
 - [model_data](model_data)
   - SAV and DYR model files used by the extraction step.
   - Bus GIS workbook required by the mapping step:
-    - model_data/WECC_Bus_GIS.xlsx
+    - e.g. model_data/WECC_Bus_GIS.xlsx
 
 ## Required Naming Conventions
 
@@ -52,7 +52,7 @@ For example:
 The workflow uses a bus GIS workbook for map generation. The file is automatically selected based on the case filename:
 
 - **WECC cases**: Uses `model_data/WECC_Bus_GIS.xlsx`
-- **Maui cases**: Uses `model_data/Maui_Bus_GIS.xlsx` (if available, falls back to WECC_Bus_GIS.xlsx)
+- **Maui cases**: Uses `model_data/Maui_Bus_GIS.xlsx`
 - **Other cases**: Uses `model_data/WECC_Bus_GIS.xlsx` (default fallback)
 
 ### Input File Locations
