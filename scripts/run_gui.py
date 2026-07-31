@@ -31,12 +31,34 @@ def _find_logo_path() -> Path | None:
     return None
 
 
+def _find_window_icon_paths() -> tuple[Path | None, Path | None]:
+    """Return preferred ICO and PNG icon candidates for the app window icon."""
+    ico_candidates = [
+        PROJECT_ROOT / "assets" / "NetStrength.ico",
+        PROJECT_ROOT / "assets" / "netstrength.ico",
+    ]
+    png_candidates = [
+        PROJECT_ROOT / "assets" / "NetStrength_icon.png",
+        PROJECT_ROOT / "assets" / "netstrength_icon.png",
+        PROJECT_ROOT / "assets" / "NetStrength_logo.png",
+        PROJECT_ROOT / "assets" / "netstrength_logo.png",
+    ]
+
+    ico_path = next((path for path in ico_candidates if path.exists()), None)
+    png_path = next((path for path in png_candidates if path.exists()), None)
+    return ico_path, png_path
+
+
 class WorkflowApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
-        icon_path = PROJECT_ROOT / "assets" / "NetStrength.ico"
-        if icon_path.exists():
-            self.iconbitmap(str(icon_path))
+        ico_path, png_path = _find_window_icon_paths()
+        if ico_path is not None:
+            self.iconbitmap(str(ico_path))
+        elif png_path is not None:
+            # Fallback path when ICO has not been generated yet.
+            self._window_icon_photo = tk.PhotoImage(file=str(png_path))
+            self.iconphoto(True, self._window_icon_photo)
         self.title("NetStrength")
         self.geometry("980x700")
         self.minsize(860, 620)
