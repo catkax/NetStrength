@@ -153,5 +153,5 @@ py scripts\run_workflow.py --gui
 
 ## Current Behavior Notes
 
-- The workflow always generates GFL, GFM, and COMPARE views.
-- Extraction is optional in the driver and GUI because it can be slow and depends on local PSS/E availability.
+- The workflow generates GFL, GFM, and COMPARE views for dynamic analysis, and only control neutral view for static analysis.
+- Extraction is optional
