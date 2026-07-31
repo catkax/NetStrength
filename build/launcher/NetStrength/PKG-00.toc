@@ -1,0 +1,65 @@
+('C:\\Users\\ckauffma\\Documents\\Tools\\System Strength Assessment\\formally '
+ 'organized '
+ 'tools\\NetStrength_6\\build\\launcher\\NetStrength\\NetStrength.pkg',
+ {'BINARY': True,
+  'DATA': True,
+  'EXECUTABLE': True,
+  'EXTENSION': True,
+  'PYMODULE': True,
+  'PYSOURCE': True,
+  'PYZ': False,
+  'SPLASH': True,
+  'SYMLINK': False},
+ [('pyi-contents-directory _internal', '', 'OPTION'),
+  ('PYZ-00.pyz',
+   'C:\\Users\\ckauffma\\Documents\\Tools\\System Strength '
+   'Assessment\\formally organized '
+   'tools\\NetStrength_6\\build\\launcher\\NetStrength\\PYZ-00.pyz',
+   'PYZ'),
+  ('struct',
+   'C:\\Users\\ckauffma\\Documents\\Tools\\System Strength '
+   'Assessment\\formally organized '
+   'tools\\NetStrength_6\\build\\launcher\\NetStrength\\localpycs\\struct.pyc',
+   'PYMODULE'),
+  ('pyimod01_archive',
+   'C:\\Users\\ckauffma\\Documents\\Tools\\System Strength '
+   'Assessment\\formally organized '
+   'tools\\NetStrength_6\\build\\launcher\\NetStrength\\localpycs\\pyimod01_archive.pyc',
+   'PYMODULE'),
+  ('pyimod02_importers',
+   'C:\\Users\\ckauffma\\Documents\\Tools\\System Strength '
+   'Assessment\\formally organized '
+   'tools\\NetStrength_6\\build\\launcher\\NetStrength\\localpycs\\pyimod02_importers.pyc',
+   'PYMODULE'),
+  ('pyimod03_ctypes',
+   'C:\\Users\\ckauffma\\Documents\\Tools\\System Strength '
+   'Assessment\\formally organized '
+   'tools\\NetStrength_6\\build\\launcher\\NetStrength\\localpycs\\pyimod03_ctypes.pyc',
+   'PYMODULE'),
+  ('pyimod04_pywin32',
+   'C:\\Users\\ckauffma\\Documents\\Tools\\System Strength '
+   'Assessment\\formally organized '
+   'tools\\NetStrength_6\\build\\launcher\\NetStrength\\localpycs\\pyimod04_pywin32.pyc',
+   'PYMODULE'),
+  ('pyiboot01_bootstrap',
+   'C:\\Users\\ckauffma\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\loader\\pyiboot01_bootstrap.py',
+   'PYSOURCE'),
+  ('pyi_rth_inspect',
+   'C:\\Users\\ckauffma\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks\\pyi_rth_inspect.py',
+   'PYSOURCE'),
+  ('pyi_rth__tkinter',
+   'C:\\Users\\ckauffma\\AppData\\Local\\Programs\\Python\\Python314\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks\\pyi_rth__tkinter.py',
+   'PYSOURCE'),
+  ('netstrength_launcher',
+   'C:\\Users\\ckauffma\\Documents\\Tools\\System Strength '
+   'Assessment\\formally organized '
+   'tools\\NetStrength_6\\scripts\\netstrength_launcher.py',
+   'PYSOURCE')],
+ 'python314.dll',
+ True,
+ False,
+ False,
+ [],
+ None,
+ None,
+ None)

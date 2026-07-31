@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "system-strength"
+version = "0.1.0"
+requires-python = ">= 3.14"
+dependencies = [
+  "pandas",
+  "numpy",
+  "plotly",
+  "xlsxwriter",
+  "pebble",
+  "matplotlib",
+  "openpyxl"
+]
+authors = [
+  {name = "Catherine Kauffman", email = "catherine.kauffman@nlr.gov"},
+]
+maintainers = [
+  {name = "Catherine Kauffman", email = "catherine.kauffman@nlr.gov"},
+]
+readme = "README.md"
+
+# include input data files inside the package
+[tool.setuptools.package-data]
+my_package = ["data/*"]
