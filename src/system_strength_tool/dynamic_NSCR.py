@@ -8,7 +8,7 @@ MODEL_DATA_DIR = SCRIPT_DIR / "model_data"
 
 def main(keyword: str, analysis: str, mode: str, case, dyr_file):
     global OUTPUT_DIR
-    OUTPUT_DIR = PROJECT_ROOT / f"output_{Path(case).stem.split('_')[0]}"
+    OUTPUT_DIR = PROJECT_ROOT / f"output_{"_".join(Path(case).stem.split('_')[:2])}"
 
     SCR_df = dynamic_SCR.main(keyword, analysis, mode, case, dyr_file)
 

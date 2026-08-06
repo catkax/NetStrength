@@ -39,7 +39,6 @@ FLAG_ALL_MACHINES = 4
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parents[1]                                
 MODEL_DATA_DIR = SCRIPT_DIR / "model_data"
-OUTPUT_DIR = PROJECT_ROOT / "output"
 
 # Configuration
 CONFIG = {
@@ -67,12 +66,6 @@ CONFIG = {
     # Debug
     'debug': False,  # Set to True for verbose output
 }
-
-def get_keyword_output_paths(keyword: str, analysis: str, mode: str):
-    keyword_dir = OUTPUT_DIR / f"{analysis}_analysis" / mode / keyword
-    return {
-        "keyword_dir": keyword_dir,
-    }
 
 def get_psse_context():
     full_path_executable = sys.executable

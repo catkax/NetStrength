@@ -132,7 +132,7 @@ def get_nlevel_buses(homebus, nlevels):
     # all done
     return lvl_busdict
 
-def create_ghost_cases(savcases):
+def create_ghost_case(case):
     ghost_cases_dir = OUTPUT_DIR / "ghost_cases"
     ghost_cases_dir.mkdir(parents=True, exist_ok=True)
 
@@ -146,50 +146,49 @@ def create_ghost_cases(savcases):
     psspy.alert_output(6,'',[])
     psspy.prompt_output(6,'',[])
 
-    #iterate over cases to run flat start
-    for case in savcases:
-        psspy.case(case)
-        if "_ghost" not in Path(case).name:
-            #Newton Raphson PF solve settings: 99 iterations, tolerance 0.01
-            psspy.solution_parameters_5([_i,99,_i,_i,10,_i,_i,20,0],[_f,_f,_f,_f,_f,0.001,_f,_f,_f,_f,_f,_f,_f,_f,_f,_f,_f,_f,_f,_f,_f])
-            #ensure evaluation of loading on branches/elements is current expressed as MVA 
-            psspy.transformer_percent_units(1)
-            psspy.non_trans_percent_units(1)
 
-            #prepare case with ghost buses
-            new_case_name = ghost_cases_dir / f"{Path(case).stem}_ghost.sav"
-            sub = -1
-            _, num = psspy.abusint(sub, 2, ["NUMBER"])
-            _, name = psspy.abuschar(sub, 2, ["NAME"])
-            _, kV_deg = psspy.abusreal(sub, 2, ["BASE","PU","ANGLED"])
-            # bus_kV_deg = np.around(bus_kV_deg,3).tolist()
-        
-            num.extend(name+kV_deg)
-            bus_list = list(map(list, zip(*num)))
-            bus_df = pd.DataFrame(bus_list, columns = ["Bus Number", "Bus Name", "Base kV", "Bus Magnitude (pu)", "Bus Angle (deg)"])
-            bus_df = bus_df.sort_values(by="Bus Number")
-            for index, bus in bus_df.iterrows():
-                ghost_num = bus["Bus Number"] + 10000
-                ghost_basekV = bus["Base kV"]
-                ghost_bustype = 1
-                ghost_kVmag = bus["Bus Magnitude (pu)"]
-                ghost_angle = bus["Bus Angle (deg)"]
-                ghost_name = "GHOST_"+str(index)
-                psspy.bus_data_4(ghost_num,0,[ghost_bustype,1,1,1],[ghost_basekV,ghost_kVmag,ghost_angle,_f,_f,_f,_f],ghost_name)
-                psspy.branch_data_4(bus["Bus Number"],ghost_num,r"""1""",[1,bus["Bus Number"],1,0,0,0,0],[0.0,0.0002,0.0,0.0,0.0,0.0,0.0,0.0,1.0,1.0,1.0,1.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],ghost_name+"b")
+    psspy.case(case)
+    if "_ghost" not in Path(case).name:
+        #Newton Raphson PF solve settings: 99 iterations, tolerance 0.01
+        psspy.solution_parameters_5([_i,99,_i,_i,10,_i,_i,20,0],[_f,_f,_f,_f,_f,0.001,_f,_f,_f,_f,_f,_f,_f,_f,_f,_f,_f,_f,_f,_f,_f])
+        #ensure evaluation of loading on branches/elements is current expressed as MVA 
+        psspy.transformer_percent_units(1)
+        psspy.non_trans_percent_units(1)
 
-            ierr = psspy.save(str(new_case_name))
-            if ierr !=0:
-                print("saving failed for case : " + str(new_case_name))
-            else:
-                print("successfully saved : " + str(new_case_name))
+        #prepare case with ghost buses
+        new_case_name = ghost_cases_dir / f"{Path(case).stem}_ghost.sav"
+        sub = -1
+        _, num = psspy.abusint(sub, 2, ["NUMBER"])
+        _, name = psspy.abuschar(sub, 2, ["NAME"])
+        _, kV_deg = psspy.abusreal(sub, 2, ["BASE","PU","ANGLED"])
+        # bus_kV_deg = np.around(bus_kV_deg,3).tolist()
+    
+        num.extend(name+kV_deg)
+        bus_list = list(map(list, zip(*num)))
+        bus_df = pd.DataFrame(bus_list, columns = ["Bus Number", "Bus Name", "Base kV", "Bus Magnitude (pu)", "Bus Angle (deg)"])
+        bus_df = bus_df.sort_values(by="Bus Number")
+        for index, bus in bus_df.iterrows():
+            ghost_num = bus["Bus Number"] + 10000
+            ghost_basekV = bus["Base kV"]
+            ghost_bustype = 1
+            ghost_kVmag = bus["Bus Magnitude (pu)"]
+            ghost_angle = bus["Bus Angle (deg)"]
+            ghost_name = "GHOST_"+str(index)
+            psspy.bus_data_4(ghost_num,0,[ghost_bustype,1,1,1],[ghost_basekV,ghost_kVmag,ghost_angle,_f,_f,_f,_f],ghost_name)
+            psspy.branch_data_4(bus["Bus Number"],ghost_num,r"""1""",[1,bus["Bus Number"],1,0,0,0,0],[0.0,0.0002,0.0,0.0,0.0,0.0,0.0,0.0,1.0,1.0,1.0,1.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],ghost_name+"b")
+
+        ierr = psspy.save(str(new_case_name))
+        if ierr !=0:
+            print("saving failed for case : " + str(new_case_name))
         else:
-            new_case_name = ghost_cases_dir / f"{Path(case).stem}.sav"
-            ierr = psspy.save(str(new_case_name))
-            if ierr !=0:
-                print("saving failed for case : " + str(new_case_name))
-            else:
-                print("successfully saved : " + str(new_case_name))
+            print("successfully saved : " + str(new_case_name))
+    else:
+        new_case_name = ghost_cases_dir / f"{Path(case).stem}.sav"
+        ierr = psspy.save(str(new_case_name))
+        if ierr !=0:
+            print("saving failed for case : " + str(new_case_name))
+        else:
+            print("successfully saved : " + str(new_case_name))
 
     ierr = psspy.close_powerflow()
     ierr = psspy.pssehalt_2()
@@ -197,7 +196,7 @@ def create_ghost_cases(savcases):
         sys.exit("psse closed with errors")
 
     print("Done creating ghost cases")
-    return ghost_cases_dir
+    return new_case_name, ghost_cases_dir
 
 def extract_outfile_dataframe(out_file, figfile_folder, gen_df, pen_level_pct):
     # print("----------------------------------------")
@@ -591,7 +590,7 @@ def case_dyn_run(args):
         IBR_PGen_at_bus += gen["PGEN"]
         # psspy.machine_chng_4(gen["Bus Number"], gen["Gen ID"], [0, _i, _i, _i, _i, _i, _i], [_f] * 17, "")
 
-    if "WECC240" in os.path.basename(case):
+    if "WECC240_2018" in os.path.basename(case):
         case_conditioning(keyword, pen_level_pct)
 
     #identify bus subsystems of interest
@@ -724,7 +723,7 @@ def get_case_bus_data(subsystem):
 
 def main(keyword: str, analysis: str, mode: str, case, dyr_file):
     global OUTPUT_DIR
-    OUTPUT_DIR = PROJECT_ROOT / f"output_{Path(case).stem.split('_')[0]}"
+    OUTPUT_DIR = PROJECT_ROOT / f"output_{"_".join(Path(case).stem.split('_')[:2])}"
 
     # Record the starting time
     start_time = time.perf_counter()
@@ -735,8 +734,8 @@ def main(keyword: str, analysis: str, mode: str, case, dyr_file):
         if not os.path.isfile(dyr_file):
             sys.exit(f"Specified .dyr file not found: {dyr_file}")
     else:
-        dyr_file = str(MODEL_DATA_DIR / f"WECC240_dynamics_UPV_v04_all_{keyword}.dyr")
-
+        sys.exit("dyr file not found.")
+        
     #make output folder(s)
     output_paths = get_keyword_output_paths(keyword, analysis, mode)
     outfile_folder = str(output_paths["outfile_dir"])
@@ -750,9 +749,8 @@ def main(keyword: str, analysis: str, mode: str, case, dyr_file):
     if not case:
         print("No network case file found")
         return
-    ghost_cases_dir = create_ghost_cases([case])
-    savcases = glob.glob(str(ghost_cases_dir / "*.sav"))
-    case = savcases[0]
+    ghost_case_file, ghost_cases_dir = create_ghost_case(case)
+    case = str(ghost_case_file)
     print("starting case : " + case)
 
     # Check dynamics data input
@@ -816,9 +814,9 @@ def main(keyword: str, analysis: str, mode: str, case, dyr_file):
     for i in range(len(pen_level_pcts)):
         # print("pen level: " + str(pen_level_pct))
         
-        gscr, pfact_df = gSCR.get_gscr_and_pfact({"case_file": case, "dyr_file": dyr_file, "sld_file": None}, keyword)
-        gSCR_vals[os.path.basename(case)] = {"gSCR": gscr, "participation factors": pfact_df}
-        print("----------------------------GSCR calculated----------------------------")
+        # gscr, pfact_df = gSCR.get_gscr_and_pfact({"case_file": case, "dyr_file": dyr_file, "sld_file": None}, keyword)
+        # gSCR_vals[os.path.basename(case)] = {"gSCR": gscr, "participation factors": pfact_df}
+        # print("----------------------------GSCR calculated----------------------------")
 
         sub_outfile_folder = os.path.join(outfile_folder,"RE_"+str(pen_level_pct))
         os.makedirs(sub_outfile_folder, exist_ok=True)

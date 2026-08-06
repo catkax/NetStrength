@@ -48,17 +48,6 @@ PROJECT_ROOT = SCRIPT_DIR.parents[1]
 MODEL_DATA_DIR = SCRIPT_DIR / "model_data"
 
 
-def get_keyword_output_paths(keyword: str, analysis: str, mode: str, metric: str):
-    keyword_dir = OUTPUT_DIR / f"{analysis}_analysis" / mode / keyword
-    return {
-        "keyword_dir": keyword_dir,
-        "outfile_dir": keyword_dir / "outfiles",
-        "figure_dir": keyword_dir / "figures",
-        "dyndata_dir": keyword_dir / "raw_out_data",
-        "results_file": keyword_dir / f"Strength_Metric_Results_{metric}.xlsx",
-        "log_dir": keyword_dir / "logs",
-    }
-
 def get_case_bus_data(subsystem):
     bus_nums = psspy.abusint(subsystem, 2, 'NUMBER')[1][0]
     bus_voltage = psspy.abusreal(subsystem, 2, 'BASE')[1][0]
@@ -95,21 +84,19 @@ def main(
     analysis: str,
     mode: str,
     metric: str,
-    case_file: str | None = None,
+    case: str | None = None,
     seq_file: str | None = None,
     dyr_file: str | None = None,
+    current_limit: float | None = None,
 ):
     global OUTPUT_DIR
-    OUTPUT_DIR = PROJECT_ROOT / f"output_{Path(case_file).stem.split('_')[0]}"
+    OUTPUT_DIR = PROJECT_ROOT / f"output_{"_".join(Path(case).stem.split('_')[:2])}"
     # Record the starting time
     start_time = time.perf_counter()
 
-    #get output paths
-    output_paths = get_keyword_output_paths(keyword, analysis, mode, metric)
-
     # get input case file
-    if case_file:
-        case = str(Path(case_file).resolve())
+    if case:
+        case = str(Path(case).resolve())
         if not os.path.isfile(case):
             sys.exit(f"Specified .sav case file not found: {case}")
     else:
@@ -150,14 +137,14 @@ def main(
 
     if metric == "SCR":
         if analysis == "static":
-            SCR_df = static_SCR.main(1.11, keyword, analysis, mode, case, seq_file)
+            SCR_df = static_SCR.main(keyword, analysis, mode, case, seq_file, current_limit=current_limit)
 
         elif analysis == "dynamic":
             SCR_df = dynamic_SCR.main(keyword, analysis, mode, case, dyr_file)
 
     if metric == "NSCR":
         if analysis == "static":
-            SCR_df, NSCR_df = static_NSCR.main(1.11, keyword, analysis, mode, case, seq_file)
+            SCR_df, NSCR_df = static_NSCR.main(keyword, analysis, mode, case, seq_file, current_limit=current_limit)
 
         elif analysis == "dynamic":
             SCR_df, NSCR_df = dynamic_NSCR.main(keyword, analysis, mode, case, dyr_file)
@@ -179,6 +166,7 @@ if __name__ == "__main__":
     parser.add_argument("--case-file", help="Path to a specific PSS/E case (.sav) file.")
     parser.add_argument("--seq-file", help="Path to a specific sequence data (.seq) file for static analysis.")
     parser.add_argument("--dyr-file", help="Path to a specific dynamics (.dyr) file for dynamic analysis.")
+    parser.add_argument("--current-limit", type=float, help="Default IBR current limit in pu for static extraction.")
     args = parser.parse_args()
     main(
         args.keyword,
@@ -188,4 +176,5 @@ if __name__ == "__main__":
         args.case_file,
         args.seq_file,
         args.dyr_file,
+        args.current_limit,
     )

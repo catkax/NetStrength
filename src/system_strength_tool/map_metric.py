@@ -32,19 +32,19 @@ COLORBAR_LEN = 0.6
 COLORBAR_FONT_SIZE = 20
 
 
-def resolve_bus_location_file(case_file: str | None) -> Path:
+def resolve_bus_location_file(case: str | None) -> Path:
     """Resolve bus GIS workbook from the case filename keyword.
 
     If case filename contains WECC or Maui, use <keyword>_Bus_GIS.xlsx.
     Otherwise fallback to default BUS_LOCATION_FILE.
     """
-    if not case_file:
-        raise FileNotFoundError(case_file)
+    if not case:
+        raise FileNotFoundError(case)
 
-    case_stem = Path(case_file).stem
+    case_stem = Path(case).stem
     # match = re.search(r"(WECC240|Maui24)", case_stem, flags=re.IGNORECASE)
     # if not match:
-    #     return FileNotFoundError(f"No GIS file found for case: {case_file}")
+    #     return FileNotFoundError(f"No GIS file found for case: {case}")
     # keyword = match.group(1)
     prefix = case_stem.split("_")[0]
     return MODEL_DIR / f"{prefix}_Bus_GIS.xlsx"
@@ -119,6 +119,36 @@ def create_custom_color_scale(global_min, global_max, metric_mode):
     return color_scale
 
 
+def compute_global_marker_sizeref(
+    strength_df: pd.DataFrame,
+    strength_cols: list[str],
+    metric_mode: str,
+    *,
+    marker_max_px: float = 16.0,
+) -> float:
+    """Build one sizeref shared by every map so marker sizes are globally comparable."""
+    if marker_max_px <= 0:
+        raise ValueError("marker_max_px must be positive")
+
+    values = strength_df[strength_cols].to_numpy(dtype=float)
+    if metric_mode == "delta":
+        magnitude = np.abs(values)
+    else:
+        magnitude = np.clip(values, a_min=0, a_max=None)
+
+    transformed_sizes = np.cbrt(magnitude) * 2
+
+    if transformed_sizes.size == 0:
+        max_size_value = 1.0
+    else:
+        max_size_value = float(np.max(transformed_sizes))
+        if max_size_value <= 0:
+            max_size_value = 1.0
+
+    # Plotly size mapping uses this reference to keep pixel sizes consistent across figures.
+    return float((2.0 * max_size_value) / (marker_max_px ** 2))
+
+
 def create_scatter_map(
     metric_mode,
     value_label,
@@ -130,6 +160,8 @@ def create_scatter_map(
     bus_numbers=None,
     SCMVAs=None,
     PMaxIBRs=None,
+    marker_sizeref=None,
+    marker_size_max=16,
 ):
     """Create a mapbox scatter plot and save it as HTML.
 
@@ -156,10 +188,6 @@ def create_scatter_map(
     # Keep zero-value points visible by giving them the smallest non-zero size.
     zero_mask = magnitude <= 0.001
     marker_sizes[zero_mask] = 0.5
-    if np.all(marker_sizes == marker_sizes[0]):  # All same size
-        chosen_max = 8
-    else:
-        chosen_max = 16
 
     # Generate custom color scale if range is available
     if range_color:
@@ -206,7 +234,7 @@ def create_scatter_map(
         lon=longitude,
         color=color_values,
         size=marker_sizes,
-        size_max=chosen_max,
+        size_max=marker_size_max,
         color_continuous_scale=color_scale,
         map_style=MAP_CONFIG['style'],
         range_color=range_for_plot,
@@ -222,6 +250,13 @@ def create_scatter_map(
     fig.update_coloraxes(
         showscale=False,
     )
+    if marker_sizeref is not None:
+        fig.update_traces(
+            marker_sizemode="area",
+            marker_sizeref=float(marker_sizeref),
+            marker_sizemin=0.5,
+        )
+
     # Build hovertemplate from only the desired fields, bypassing Plotly's auto-added color/size
     hover_lines = [f"{k}: %{{customdata[{i}]}}" for i, k in enumerate(hover_data)]
     fig.update_traces(hovertemplate="<br>".join(hover_lines) + "<extra></extra>")
@@ -351,12 +386,12 @@ def build_compare_dataframe(gfl_file: Path, gfm_file: Path, compare_file: Path, 
     return compare_df, common_strength_cols
 
 
-def main(keyword: str, analysis: str, mode: str, metric: str, case_file: str | None = None) -> None:
+def main(keyword: str, analysis: str, mode: str, metric: str, case: str | None = None) -> None:
     global METRIC
     global OUTPUT_DIR
-    OUTPUT_DIR = PROJECT_ROOT / f"output_{Path(case_file).stem.split('_')[0]}"
+    OUTPUT_DIR = PROJECT_ROOT / f"output_{'_'.join(Path(case).stem.split('_')[:2])}"
     METRIC = f"{analysis}_{metric}"
-    bus_location_file = resolve_bus_location_file(case_file)
+    bus_location_file = resolve_bus_location_file(case)
 
     base_output_dir = OUTPUT_DIR / f"{analysis}_analysis" / mode
     keyword_output_dir = base_output_dir / keyword
@@ -399,6 +434,9 @@ def main(keyword: str, analysis: str, mode: str, metric: str, case_file: str | N
         raise ValueError(f"No metric columns found for {METRIC}.")
     global_range = [global_range_tuple[0], global_range_tuple[1]]
 
+    # One global marker-size reference keeps bubble sizes comparable across all generated maps.
+    marker_sizeref = compute_global_marker_sizeref(strength_df, strength_cols, metric_mode)
+
     metric_details = METRIC.split("_")
     for col in strength_cols:
         scmva_col = col.replace(f"{metric_details[1]}_", "SCMVA_")
@@ -433,6 +471,8 @@ def main(keyword: str, analysis: str, mode: str, metric: str, case_file: str | N
             bus_numbers=map_data["Bus Number"].to_numpy(),
             SCMVAs=map_data[scmva_col].to_numpy() if scmva_col in map_data.columns else None,
             PMaxIBRs=map_data[pmax_col].to_numpy() if pmax_col in map_data.columns else None,
+            marker_sizeref=marker_sizeref,
+            marker_size_max=16,
         )
 
 

@@ -70,6 +70,7 @@ def run_script(
     case_file: str | None = None,
     seq_file: str | None = None,
     dyr_file: str | None = None,
+    current_limit: float | None = None,
     cancel_event: threading.Event | None = None,
     log: LogCallback = _default_log,
 ) -> None:
@@ -98,6 +99,8 @@ def run_script(
         cmd.extend(["--seq-file", seq_file])
     if dyr_file:
         cmd.extend(["--dyr-file", dyr_file])
+    if current_limit is not None:
+        cmd.extend(["--current-limit", str(current_limit)])
 
     log(
         f"Running: {script_name} "
@@ -169,8 +172,8 @@ def run_workflow(
     include_mapping: bool = True,
     case_file: str | None = None,
     seq_file: str | None = None,
-    gfl_dyr_file: str | None = None,
-    gfm_dyr_file: str | None = None,
+    dyr_file: str | None = None,
+    current_limit: float | None = None,
     cancel_event: threading.Event | None = None,
     log: LogCallback = _default_log,
 ) -> tuple[Path | None, Path | None, Path | None]:
@@ -203,14 +206,11 @@ def run_workflow(
             if not seq_file:
                 raise ValueError("A .seq file is required for static analysis when extraction runs.")
         elif analysis == "dynamic":
-            if scope_name in {"gfl & gfm", "gfl"} and not gfl_dyr_file:
-                raise ValueError("A GFL .dyr file is required for dynamic GFL & GFM/GFL workflows.")
-            if scope_name in {"gfl & gfm", "gfm"} and not gfm_dyr_file:
-                raise ValueError("A GFM .dyr file is required for dynamic GFL & GFM/GFM workflows.")
+            if not dyr_file:
+                raise ValueError("A .dyr file is required for dynamic analysis when extraction runs.")
 
     for keyword in selected_keywords:
         if should_extract:
-            keyword_dyr_file = gfl_dyr_file if keyword == "GFL" else gfm_dyr_file
             run_script(
                 EXTRACT_SCRIPT,
                 keyword,
@@ -219,7 +219,8 @@ def run_workflow(
                 metric,
                 case_file=case_file,
                 seq_file=seq_file if analysis == "static" else None,
-                dyr_file=keyword_dyr_file if analysis == "dynamic" else None,
+                dyr_file=dyr_file if analysis == "dynamic" else None,
+                current_limit=current_limit if analysis == "static" else None,
                 cancel_event=cancel_event,
                 log=log,
             )
@@ -315,8 +316,8 @@ if __name__ == "__main__":
     )
     parser.add_argument("--case-file", help="Path to the starting PSS/E case (.sav).")
     parser.add_argument("--seq-file", help="Path to the sequence data file (.seq) for static extraction.")
-    parser.add_argument("--gfl-dyr-file", help="Path to the GFL dynamics file (.dyr) for dynamic extraction.")
-    parser.add_argument("--gfm-dyr-file", help="Path to the GFM dynamics file (.dyr) for dynamic extraction.")
+    parser.add_argument("--dyr-file", help="Path to the dynamics file (.dyr) for dynamic extraction.")
+    parser.add_argument("--current-limit", type=float, help="Default IBR current limit in pu for static extraction.")
 
     parser.add_argument(
         "--gui",
@@ -335,7 +336,7 @@ if __name__ == "__main__":
             scope=args.scope,
             case_file=args.case_file,
             seq_file=args.seq_file,
-            gfl_dyr_file=args.gfl_dyr_file,
-            gfm_dyr_file=args.gfm_dyr_file,
+            dyr_file=args.dyr_file,
+            current_limit=args.current_limit,
         )
 

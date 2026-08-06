@@ -10,15 +10,14 @@ import static_SCR
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parents[1]                                
 MODEL_DATA_DIR = SCRIPT_DIR / "model_data"
-DEFAULT_CURRENT_LIMIT = 1.11
 
 
-def main(current_limit, keyword, analysis, mode, case, seq_file):
+def main(keyword, analysis, mode, case, seq_file, current_limit: float | None = None):
     global OUTPUT_DIR
-    OUTPUT_DIR = PROJECT_ROOT / f"output_{Path(case).stem.split('_')[0]}"
+    OUTPUT_DIR = PROJECT_ROOT / f"output_{"_".join(Path(case).stem.split('_')[:2])}"
 
     # gather static SCR data
-    SCR_df = static_SCR.main(current_limit, keyword, analysis, mode, case, seq_file)
+    SCR_df = static_SCR.main(keyword, analysis, mode, case, seq_file, current_limit=current_limit)
 
     #CHANGE FILE CSV INPUT WHEN DATA IS AVAILABLE
     CSCR_df = pd.read_csv(MODEL_DATA_DIR / "fake_CSCR_input.csv")

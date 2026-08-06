@@ -18,6 +18,7 @@ Note:
 '''
 
 import glob
+import argparse
 import os
 import sys
 import pandas as pd
@@ -120,9 +121,15 @@ def calculate_SCR_with_replacement_multi(args):
     # get the updated mode
     gen_df = get_case_bus_data(-1)
 
-    # apply current limit for all IBRs with seq data
+    # apply current limit for all IBRs
     for index, gen in gen_df[gen_df["WMOD"] != 0].iterrows():
-        psspy.seq_machine_ncs_data(gen["Bus Number"],gen["Gen ID"],1,[current_limit,0.9,1.05],[r"""TICHAR_1""",r"""TICHAR_1"""])  
+        ierr, existing_current_limit = psspy.macdat(gen["Bus Number"],gen["Gen ID"],"IFMAX")
+        # sys.exit("existing current limit for bus " + str(gen["Bus Number"]) + " gen " + str(gen["Gen ID"]) + ": " + str(existing_current_limit))
+        if existing_current_limit is None:
+            psspy.seq_machine_ncs_data(gen["Bus Number"],gen["Gen ID"],1,[current_limit,0.9,1.05],[r"""TICHAR_1""",r"""TICHAR_1"""])
+        else:
+            print("existing current limit for bus " + str(gen["Bus Number"]) + " gen " + str(gen["Gen ID"]) + ": " + str(existing_current_limit))
+
     
     #Calculate IBR penetration level (pen_level)
     total_PMaxIBR = gen_df[(gen_df["WMOD"] != 0) & (gen_df["Status"] != 0)]["PMAX"].sum()
@@ -207,9 +214,14 @@ def calculate_SCR_with_replacement(args, replace_bus_list):
     # get the updated mode
     gen_df = get_case_bus_data(-1)
 
-    # add current limit (default 1.11 pu) for all IBRs using seq data
+    # apply current limit for all IBRs
     for index, gen in gen_df[gen_df["WMOD"] != 0].iterrows():
-        psspy.seq_machine_ncs_data(gen["Bus Number"],gen["Gen ID"],1,[current_limit,0.9,1.05],[r"""TICHAR_1""",r"""TICHAR_1"""])  
+        ierr, existing_current_limit = psspy.macdat(gen["Bus Number"],gen["Gen ID"],"IFMAX")
+        # sys.exit("existing current limit for bus " + str(gen["Bus Number"]) + " gen " + str(gen["Gen ID"]) + ": " + str(existing_current_limit))
+        if existing_current_limit is None:
+            psspy.seq_machine_ncs_data(gen["Bus Number"],gen["Gen ID"],1,[current_limit,0.9,1.05],[r"""TICHAR_1""",r"""TICHAR_1"""])
+        else:
+            print("existing current limit for bus " + str(gen["Bus Number"]) + " gen " + str(gen["Gen ID"]) + ": " + str(existing_current_limit)) 
     
     #Calculate IBR penetration level (pen_level)
     total_PMaxIBR = gen_df[(gen_df["WMOD"] != 0) & (gen_df["Status"] != 0)]["PMAX"].sum()
@@ -292,9 +304,9 @@ def calculate_SCR_with_replacement(args, replace_bus_list):
 
     return SC_df, lowest_SCR_bus, all_buses_considered
 
-def main(current_limit, keyword, analysis, mode, case, seq_file):
+def main(keyword, analysis, mode, case, seq_file, current_limit: float | None = None):
     global OUTPUT_DIR
-    OUTPUT_DIR = PROJECT_ROOT / f"output_{Path(case).stem.split('_')[0]}"
+    OUTPUT_DIR = PROJECT_ROOT / f"output_{"_".join(Path(case).stem.split('_')[:2])}"
 
     #verify sequence file
     if seq_file:
@@ -318,6 +330,10 @@ def main(current_limit, keyword, analysis, mode, case, seq_file):
     
     if current_limit is None:
         current_limit = DEFAULT_CURRENT_LIMIT
+    else:
+        current_limit = float(current_limit)
+        if current_limit <= 0:
+            raise ValueError("current_limit must be greater than 0")
 
     if not case:
         print("No network case file found")
@@ -413,5 +429,20 @@ def main(current_limit, keyword, analysis, mode, case, seq_file):
     return df_all
 
 if __name__ == "__main__":
-    main(DEFAULT_CURRENT_LIMIT)
+    parser = argparse.ArgumentParser(description="Compute static SCR metrics.")
+    parser.add_argument("--keyword", required=True, choices=["GFL", "GFM", "CONTROL-NEUTRAL"])
+    parser.add_argument("--analysis", default="static", choices=["static"])
+    parser.add_argument("--mode", default="evolution", choices=["snapshot", "evolution"])
+    parser.add_argument("--case-file", required=True, help="Path to a specific PSS/E case (.sav) file.")
+    parser.add_argument("--seq-file", required=True, help="Path to a specific sequence data (.seq) file.")
+    parser.add_argument("--current-limit", type=float, default=DEFAULT_CURRENT_LIMIT, help="Default IBR current limit in pu.")
+    args = parser.parse_args()
+    main(
+        args.keyword,
+        args.analysis,
+        args.mode,
+        args.case_file,
+        args.seq_file,
+        current_limit=args.current_limit,
+    )
 

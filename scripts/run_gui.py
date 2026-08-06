@@ -71,10 +71,10 @@ class WorkflowApp(tk.Tk):
         self.mode_var = tk.StringVar(value="snapshot")
         self.metric_var = tk.StringVar(value="NSCR")
         self.scope_var = tk.StringVar(value="control-neutral")
+        self.current_limit_var = tk.StringVar(value="1.11")
         self.case_file_var = tk.StringVar(value="")
         self.seq_file_var = tk.StringVar(value="")
-        self.gfl_dyr_file_var = tk.StringVar(value="")
-        self.gfm_dyr_file_var = tk.StringVar(value="")
+        self.dyr_file_var = tk.StringVar(value="")
         self.status_var = tk.StringVar(value="Ready")
 
         self._build_ui()
@@ -189,6 +189,10 @@ class WorkflowApp(tk.Tk):
         )
         self.scope_combo.grid(row=1, column=3, sticky="w", padx=(0, 14))
 
+        ttk.Label(form, text="Default Current Limit (pu)").grid(row=0, column=4, sticky="w", pady=(8, 0), padx=(0, 8))
+        self.current_limit_entry = ttk.Entry(form, textvariable=self.current_limit_var, width=12)
+        self.current_limit_entry.grid(row=0, column=5, sticky="w", pady=(8, 0), padx=(0, 14))
+
         files_frame = ttk.LabelFrame(header, text="Input Files", padding=(10, 8))
         files_frame.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(12, 0))
         files_frame.columnconfigure(1, weight=1)
@@ -213,25 +217,15 @@ class WorkflowApp(tk.Tk):
         )
         self.seq_file_button.grid(row=1, column=2, padx=(8, 0), pady=(0, 6))
 
-        ttk.Label(files_frame, text="GFL DYR (.dyr) dynamic").grid(row=2, column=0, sticky="w", padx=(0, 8), pady=(0, 6))
-        self.gfl_dyr_entry = ttk.Entry(files_frame, textvariable=self.gfl_dyr_file_var)
-        self.gfl_dyr_entry.grid(row=2, column=1, sticky="ew", pady=(0, 6))
-        self.gfl_dyr_button = ttk.Button(
+        ttk.Label(files_frame, text="DYR (.dyr) dynamic").grid(row=2, column=0, sticky="w", padx=(0, 8), pady=(0, 6))
+        self.dyr_file_entry = ttk.Entry(files_frame, textvariable=self.dyr_file_var)
+        self.dyr_file_entry.grid(row=2, column=1, sticky="ew", pady=(0, 6))
+        self.dyr_file_button = ttk.Button(
             files_frame,
             text="Browse",
-            command=lambda: self._browse_file(self.gfl_dyr_file_var, [("DYR files", "*.dyr"), ("All files", "*.*")]),
+            command=lambda: self._browse_file(self.dyr_file_var, [("DYR files", "*.dyr"), ("All files", "*.*")]),
         )
-        self.gfl_dyr_button.grid(row=2, column=2, padx=(8, 0), pady=(0, 6))
-
-        ttk.Label(files_frame, text="GFM DYR (.dyr) dynamic").grid(row=3, column=0, sticky="w", padx=(0, 8))
-        self.gfm_dyr_entry = ttk.Entry(files_frame, textvariable=self.gfm_dyr_file_var)
-        self.gfm_dyr_entry.grid(row=3, column=1, sticky="ew")
-        self.gfm_dyr_button = ttk.Button(
-            files_frame,
-            text="Browse",
-            command=lambda: self._browse_file(self.gfm_dyr_file_var, [("DYR files", "*.dyr"), ("All files", "*.*")]),
-        )
-        self.gfm_dyr_button.grid(row=3, column=2, padx=(8, 0))
+        self.dyr_file_button.grid(row=2, column=2, padx=(8, 0), pady=(0, 6))
 
         buttons = ttk.LabelFrame(header, text="Actions", padding=(10, 8))
         buttons.grid(row=4, column=0, columnspan=2, sticky="ew", pady=(12, 0))
@@ -376,13 +370,13 @@ class WorkflowApp(tk.Tk):
 
         enable_case = extraction_runs
         enable_seq = extraction_runs and analysis == "static"
-        enable_gfl_dyr = extraction_runs and analysis == "dynamic" and scope in {"gfl & gfm", "gfl"}
-        enable_gfm_dyr = extraction_runs and analysis == "dynamic" and scope in {"gfl & gfm", "gfm"}
+        enable_current_limit = extraction_runs and analysis == "static"
+        enable_dyr = extraction_runs and analysis == "dynamic"
 
         self._set_input_enabled(self.case_file_entry, self.case_file_button, enable_case)
         self._set_input_enabled(self.seq_file_entry, self.seq_file_button, enable_seq)
-        self._set_input_enabled(self.gfl_dyr_entry, self.gfl_dyr_button, enable_gfl_dyr)
-        self._set_input_enabled(self.gfm_dyr_entry, self.gfm_dyr_button, enable_gfm_dyr)
+        self.current_limit_entry.configure(state="normal" if enable_current_limit else "disabled")
+        self._set_input_enabled(self.dyr_file_entry, self.dyr_file_button, enable_dyr)
 
     def _on_input_selection_changed(self, *_: object) -> None:
         self._apply_input_rules()
@@ -432,7 +426,7 @@ class WorkflowApp(tk.Tk):
     def _refresh_output_folder_button(self) -> None:
         case_file = self.case_file_var.get()
         if case_file:
-            output_dir = PROJECT_ROOT / f"output_{Path(case_file).stem.split('_')[0]}"
+            output_dir = PROJECT_ROOT / f"output_{"_".join(Path(case_file).stem.split('_')[:2])}"
             state = "normal" if output_dir.exists() else "disabled"
         else:
             state = "disabled"
@@ -451,7 +445,7 @@ class WorkflowApp(tk.Tk):
         case_file = self.case_file_var.get()
         return (
             PROJECT_ROOT
-            / f"output_{Path(case_file).stem.split('_')[0]}"
+            /f"output_{"_".join(Path(case_file).stem.split('_')[:2])}"
             / f"{analysis}_analysis"
             / mode
             / keyword
@@ -496,8 +490,8 @@ class WorkflowApp(tk.Tk):
         
         case_file: str | None = None
         seq_file: str | None = None
-        gfl_dyr_file: str | None = None
-        gfm_dyr_file: str | None = None
+        dyr_file: str | None = None
+        current_limit: float | None = None
 
         try:
             extraction_runs = include_extract and scope in {"gfl & gfm", "gfl", "gfm", "control-neutral"}
@@ -505,19 +499,18 @@ class WorkflowApp(tk.Tk):
             if extraction_runs:
                 if analysis == "static":
                     seq_file = self._validate_input_file(self.seq_file_var.get().strip(), ".seq", "SEQ (.seq)")
+                    try:
+                        current_limit = float(self.current_limit_var.get().strip())
+                    except ValueError as exc:
+                        raise ValueError("Default current limit must be a numeric value.") from exc
+                    if current_limit <= 0:
+                        raise ValueError("Default current limit must be greater than 0.")
                 else:
-                    if scope in {"gfl & gfm", "gfl"}:
-                        gfl_dyr_file = self._validate_input_file(
-                            self.gfl_dyr_file_var.get().strip(),
-                            ".dyr",
-                            "GFL DYR (.dyr)",
-                        )
-                    if scope in {"gfl & gfm", "gfm"}:
-                        gfm_dyr_file = self._validate_input_file(
-                            self.gfm_dyr_file_var.get().strip(),
-                            ".dyr",
-                            "GFM DYR (.dyr)",
-                        )
+                    dyr_file = self._validate_input_file(
+                        self.dyr_file_var.get().strip(),
+                        ".dyr",
+                        "DYR (.dyr)",
+                    )
         except ValueError as exc:
             messagebox.showerror("Invalid input file", str(exc))
             return
@@ -541,8 +534,8 @@ class WorkflowApp(tk.Tk):
                 include_mapping,
                 case_file,
                 seq_file,
-                gfl_dyr_file,
-                gfm_dyr_file,
+                dyr_file,
+                current_limit,
                 self.cancel_event,
             ),
             daemon=True,
@@ -568,8 +561,8 @@ class WorkflowApp(tk.Tk):
         include_mapping: bool,
         case_file: str | None,
         seq_file: str | None,
-        gfl_dyr_file: str | None,
-        gfm_dyr_file: str | None,
+        dyr_file: str | None,
+        current_limit: float | None,
         cancel_event: threading.Event,
     ) -> None:
         try:
@@ -582,8 +575,8 @@ class WorkflowApp(tk.Tk):
                 include_mapping=include_mapping,
                 case_file=case_file,
                 seq_file=seq_file,
-                gfl_dyr_file=gfl_dyr_file,
-                gfm_dyr_file=gfm_dyr_file,
+                dyr_file=dyr_file,
+                current_limit=current_limit,
                 cancel_event=cancel_event,
                 log=self._log_callback,
             )
@@ -654,7 +647,7 @@ class WorkflowApp(tk.Tk):
 
     def _open_output_folder(self) -> None:
         case_file = self.case_file_var.get()
-        output_dir = PROJECT_ROOT / f"output_{Path(case_file).stem.split('_')[0]}"
+        output_dir = PROJECT_ROOT / f"output_{"_".join(Path(case_file).stem.split('_')[:2])}"
         try:
             # Windows Explorer integration.
             import os

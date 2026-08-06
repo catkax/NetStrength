@@ -188,8 +188,8 @@ HTML_TEMPLATE = '''<!DOCTYPE html>
             display: grid;
             gap: 16px;
             padding: 20px;
-            grid-template-columns: repeat(3, minmax(320px, 1fr));
-            max-width: 1600px;
+            grid-template-columns: repeat(auto-fit, minmax(520px, 1fr));
+            max-width: 1900px;
             margin: 0 auto 32px;
         }}
 
@@ -323,7 +323,7 @@ HTML_TEMPLATE = '''<!DOCTYPE html>
         }}
 
         @media (max-width: 1180px) {{
-            .grid {{ grid-template-columns: repeat(2, minmax(300px, 1fr)); }}
+            .grid {{ grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); }}
         }}
 
         @media (max-width: 820px) {{
@@ -406,8 +406,7 @@ HTML_TEMPLATE = '''<!DOCTYPE html>
 </html>
 '''
 
-def discover_map_files(directory: Path, keyword: str):
-    output_file = directory / f"Strength_All_Grid.html"
+def discover_map_files(directory: Path):
     files = []
 
     map_files = sorted(directory.glob(f"{METRIC}_*.html"))
@@ -416,10 +415,7 @@ def discover_map_files(directory: Path, keyword: str):
     order_dict = dict(zip(map_order, map_files))
     order_dict1 = collections.OrderedDict(sorted(order_dict.items()))
     for num, file in order_dict1.items():
-        if file.name == output_file.name:
-            continue
-        if METRIC.startswith("dynamic_") and num > 95:
-            continue
+
         files.append(file)
 
     return files
@@ -537,17 +533,18 @@ def get_global_metric_range(keyword_dir: Path, keyword: str, metric: str):
     )
 
 
-def main(keyword: str, analysis: str, mode: str, metric: str, case_file: str):
+def main(keyword: str, analysis: str, mode: str, metric: str, case: str):
     global METRIC
     global OUTPUT_DIR
-    OUTPUT_DIR = PROJECT_ROOT / f"output_{Path(case_file).stem.split('_')[0]}"
+    OUTPUT_DIR = PROJECT_ROOT / f"output_{"_".join(Path(case).stem.split('_')[:2])}"
+
     METRIC = f"{analysis}_{metric}"
 
     keyword_dir = OUTPUT_DIR / f"{analysis}_analysis" / mode / keyword
     html_dir = keyword_dir / f"{metric}_htmls"
     html_dir.mkdir(parents=True, exist_ok=True)
     output_path = html_dir / f"Strength_All_Grid.html"
-    map_files = discover_map_files(html_dir, keyword)
+    map_files = discover_map_files(html_dir)
 
     if not map_files:
         print(html_dir)
